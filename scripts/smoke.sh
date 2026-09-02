@@ -81,12 +81,26 @@ fi
 
 echo
 echo "== audit rows (decision + evidence persisted for every call) =="
-docker compose exec -T postgres psql -U controlplane -d controlplane \
-  -c "SELECT usecase_id, jurisdiction, status, decision,
-             json_array_length(detector_results) AS n_det,
-             decision_detail->>'fail_safe_triggered' AS failsafe,
-             round(gateway_latency_ms) AS gw_ms
-      FROM audit_records ORDER BY id DESC LIMIT 4;"
+# Through the gateway's own API, not a direct DB query — DATABASE_URL may
+# point anywhere (the local docker postgres, or an external cloud Postgres),
+# and this way always reflects whatever the running gateway actually wrote
+# to, instead of assuming co-located Postgres.
+recent_ids=$(curl -sS "$GATEWAY/v1/audit/records?limit=4" | python3 -c '
+import sys, json
+for r in json.load(sys.stdin):
+    print(r["request_id"])')
+printf '%-18s %-4s %-6s %-8s %-5s %-9s %s\n' usecase_id jur status decision n_det failsafe gw_ms
+for rid in $recent_ids; do
+  curl -sS "$GATEWAY/v1/audit/records/$rid" | python3 -c '
+import sys, json
+r = json.load(sys.stdin)["record"]
+n_det = len(r.get("detector_results") or [])
+failsafe = (r.get("decision_detail") or {}).get("fail_safe_triggered")
+gw_ms = r.get("gateway_latency_ms")
+print(f"{(r.get(\"usecase_id\") or \"-\"):<18} {(r.get(\"jurisdiction\") or \"-\"):<4} "
+      f"{r.get(\"status\",\"-\"):<6} {r.get(\"decision\",\"-\"):<8} {n_det:<5} "
+      f"{str(failsafe):<9} {round(gw_ms) if gw_ms is not None else \"-\"}")'
+done
 
 echo
 if [ "$FAILED" = 0 ]; then
@@ -97,7 +111,10 @@ fi
 
 echo
 echo "== action gate (mailtrap) =="
-req_id=$(docker compose exec -T postgres psql -tA -U controlplane -d controlplane -c "SELECT request_id FROM audit_records WHERE decision = 'allow' ORDER BY id DESC LIMIT 1;")
+req_id=$(curl -sS "$GATEWAY/v1/audit/records?tier=allow&limit=1" | python3 -c '
+import sys, json
+records = json.load(sys.stdin)
+print(records[0]["request_id"] if records else "")')
 if [ -n "$req_id" ]; then
   action_resp=$(curl -sS -w '\n%{http_code}' "$GATEWAY/v1/actions/execute" \
          -H 'Content-Type: application/json' \

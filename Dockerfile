@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y curl && \
 WORKDIR /app
 
 # Copy Python packages
-COPY gateway/ pyproject.toml /app/gateway/
+COPY gateway/ /app/gateway/
 COPY policy/ /app/policy/
 COPY detectors/ /app/detectors/
 COPY decision/ /app/decision/

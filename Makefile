@@ -44,17 +44,25 @@ logs: ## Tail gateway logs
 smoke: ## End-to-end: real request through the running gateway (needs GROQ_API_KEY in .env)
 	./scripts/smoke.sh
 
-# Both targets below run on the host against the dockerized Postgres, so
-# DATABASE_URL needs the host-mapped port (5433) — .env's own DATABASE_URL
-# targets the in-network hostname (postgres:5432), which only resolves from
-# inside the compose network, not from the host running `uv run` here.
-HOST_DATABASE_URL := postgresql+asyncpg://controlplane:controlplane@localhost:5433/controlplane
+# Both targets below run on the host. controlplane_gateway.config's
+# `env_file=".env"` resolves relative to the process's CWD — `uv run` (bare)
+# from gateway/ would look for a nonexistent gateway/.env and silently fall
+# through to the DATABASE_URL hardcoded in config.py's Settings defaults
+# (the LOCAL docker postgres), never actually reading the real .env at the
+# repo root. `--env-file ../.env` loads it explicitly, so this now picks up
+# whatever DATABASE_URL/REDIS_URL .env actually has (cloud or local).
+#
+# If .env's DATABASE_URL is the LOCAL docker-compose postgres specifically,
+# it'll read `postgres:5432` there — a docker-internal hostname that still
+# won't resolve from the host running this. In that one case, override it:
+#   make retention-sweep DATABASE_URL_OVERRIDE=postgresql+asyncpg://controlplane:controlplane@localhost:5433/controlplane
+DATABASE_URL_OVERRIDE :=
 
 retention-sweep: ## Run the retention job against the live audit store
-	cd gateway && DATABASE_URL=$(HOST_DATABASE_URL) uv run python -m controlplane_gateway.audit.retention
+	cd gateway && $(if $(DATABASE_URL_OVERRIDE),DATABASE_URL=$(DATABASE_URL_OVERRIDE)) uv run --env-file ../.env python -m controlplane_gateway.audit.retention
 
 eval-run: ## Score evals/corpus/*.jsonl against the real running gateway, record real precision/recall/F1
-	cd gateway && DATABASE_URL=$(HOST_DATABASE_URL) uv run python ../scripts/eval_runner.py
+	cd gateway && $(if $(DATABASE_URL_OVERRIDE),DATABASE_URL=$(DATABASE_URL_OVERRIDE)) uv run --env-file ../.env python ../scripts/eval_runner.py
 
 web-install: ## Install the Next.js console deps
 	cd web && pnpm install
