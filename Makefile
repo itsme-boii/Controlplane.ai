@@ -59,7 +59,11 @@ smoke: ## End-to-end: real request through the running gateway (needs GROQ_API_K
 DATABASE_URL_OVERRIDE :=
 
 retention-sweep: ## Run the retention job against the live audit store
-	cd gateway && $(if $(DATABASE_URL_OVERRIDE),DATABASE_URL=$(DATABASE_URL_OVERRIDE)) uv run --env-file ../.env python -m controlplane_gateway.audit.retention
+	# -m controlplane_gateway.audit (the PACKAGE) runs audit/__main__.py, the
+	# actual entrypoint — -m controlplane_gateway.audit.retention (the
+	# submodule) only defines run_retention_sweep and exits, silently doing
+	# nothing (no __main__ guard in retention.py itself).
+	cd gateway && $(if $(DATABASE_URL_OVERRIDE),DATABASE_URL=$(DATABASE_URL_OVERRIDE)) uv run --env-file ../.env python -m controlplane_gateway.audit
 
 eval-run: ## Score evals/corpus/*.jsonl against the real running gateway, record real precision/recall/F1
 	cd gateway && $(if $(DATABASE_URL_OVERRIDE),DATABASE_URL=$(DATABASE_URL_OVERRIDE)) uv run --env-file ../.env python ../scripts/eval_runner.py

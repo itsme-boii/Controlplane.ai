@@ -115,7 +115,7 @@ export default function DetailView({ params }: { params: { id: string } }) {
                     {det.spans && det.spans.length > 0 && (
                       <div className="mt-2 text-xs font-mono text-neutral-500">
                         {det.spans.map((s: any, j: number) => (
-                          <div key={j}>Span: {s.label ?? "match"} "{s.text}"</div>
+                          <div key={j}>Span: {s.label ?? "match"} &quot;{s.text}&quot;</div>
                         ))}
                       </div>
                     )}
