@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: |
+          cd gateway && uv sync --extra dev
+          cd ../detectors && uv sync --extra dev
+          cd ../policy && uv sync --extra dev
+          cd ../decision && uv sync --extra dev
+
+      - name: Lint
+        run: |
+          cd gateway && uv run ruff check . && uv run ruff format --check .
+          cd ../detectors && uv run --extra dev ruff check . && uv run --extra dev ruff format --check .
+          cd ../policy && uv run ruff check . && uv run ruff format --check .
+          cd ../decision && uv run ruff check . && uv run ruff format --check .
+
+      - name: Type-check
+        run: |
+          cd gateway && uv run mypy controlplane_gateway
+          cd ../decision && uv run mypy controlplane_decision
+
+      - name: Test (gateway)
+        run: cd gateway && uv run pytest -q
+
+      - name: Test (detectors, fast)
+        run: cd detectors && uv run pytest -q -m "not models"
+
+      - name: Test (policy)
+        run: cd policy && uv run pytest -q
+
+      - name: Test (decision — includes the no-false-fallback exit gate)
+        run: cd decision && uv run pytest -q
+
+  # Real-model detector suite: heavy weights, so cached and kept off the PR path.
+  detector-models:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cache model weights
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            ~/.cache/torch
+          key: detector-models-${{ hashFiles('detectors/uv.lock') }}
+      - name: Install
+        run: cd detectors && uv sync --extra dev --extra ml
+      - name: Test (detectors, real models)
+        run: cd detectors && uv run --extra dev --extra ml pytest -q -m models
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install
+        run: cd web && pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: cd web && pnpm lint
+
+      - name: Build
+        run: cd web && pnpm build

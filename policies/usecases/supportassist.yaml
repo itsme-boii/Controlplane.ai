@@ -1,0 +1,32 @@
+# Customer-facing chatbot. Low tolerance for privacy leaks, tight latency budget.
+meta:
+  name: supportassist
+  kind: usecase
+  description: Customer support chatbot — fast path, real-time, privacy-critical.
+  effective_from: 2026-01-01
+
+latency_path: fast
+latency_budget_ms: 400
+
+checks:
+  # Fast path: deterministic checks stay inline; the judge runs post-hoc and can
+  # raise a retroactive incident rather than delaying the reply.
+  groundedness:
+    enabled: false          # no source docs in this use case
+  judge:
+    blocking: false
+  injection:
+    thresholds: { similarity: 0.7 }
+
+pii:
+  action: edit
+  entities:
+    - PERSON
+    - EMAIL_ADDRESS
+    - PHONE_NUMBER
+    - CREDIT_CARD
+    - US_SSN
+    - IBAN_CODE
+    - IP_ADDRESS
+
+retention_days: 180

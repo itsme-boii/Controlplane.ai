@@ -1,0 +1,9 @@
+# US baseline overlay. Minimal — the base policy is already US-shaped.
+meta:
+  name: us
+  kind: jurisdiction
+  description: United States baseline — no additional restrictions over base.
+  effective_from: 2026-01-01
+
+# Sectoral US privacy law; 1 year retention is a common default.
+retention_days: 365

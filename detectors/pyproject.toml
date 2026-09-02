@@ -1,0 +1,67 @@
+[project]
+name = "controlplane-detectors"
+version = "0.1.0"
+description = "ControlPlane.ai — detector library (uniform text -> DetectionResult interface)"
+requires-python = ">=3.11"
+# Base install is just the contract — cheap to import from anywhere.
+dependencies = [
+    "pydantic>=2.9",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+# The real detector models. Kept optional so a caller that only needs the
+# DetectionResult contract (or the decision engine's type imports) does not pull
+# torch. The gateway takes this extra once it runs detectors in-process (Phase 4).
+ml = [
+    # spaCy/thinc 3.7 extensions are built against the numpy 1.x ABI.
+    "numpy<2",
+    # PII: spaCy NER + regex + checksum validators
+    "presidio-analyzer>=2.2.355",
+    "spacy>=3.7",
+    "en-core-web-lg",
+    # Toxicity / bias: Detoxify + HF "regard" classifier for demographic-swap differential
+    "detoxify>=0.5.2",
+    "transformers>=4.40",
+    "torch>=2.2",
+    # Groundedness: cross-encoder NLI entailment
+    "sentence-transformers>=3.0",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["controlplane_detectors"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+# CPU torch wheels — keeps the image portable and CI light (no CUDA payload).
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+en-core-web-lg = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1-py3-none-any.whl" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = [
+    "models: exercises real ML models (downloads weights on first run; slow)",
+]

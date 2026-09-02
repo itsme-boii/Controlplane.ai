@@ -1,0 +1,55 @@
+# Analyst tool feeding regulated workflows. Lowest risk tolerance, human always in loop.
+meta:
+  name: decisionsupport
+  kind: usecase
+  description: Analyst decision-support — deep path, generous latency, strict thresholds.
+  effective_from: 2026-01-01
+
+latency_path: deep
+latency_budget_ms: 8000
+
+checks:
+  pii:
+    thresholds: { score: 0.35 }
+  toxicity:
+    thresholds: { toxicity: 0.3, identity_attack: 0.25, insult: 0.4 }
+  groundedness:
+    enabled: true
+    blocking: true
+    thresholds: { entailment: 0.7 }
+  judge:
+    blocking: true
+    thresholds: { violation: 0.35 }
+
+confidence_floor: 0.7   # abstain readily — a human is always available here
+
+# Stricter table: any high-severity finding — PII included — blocks outright, and
+# medium-severity bias blocks rather than going to review.
+decision_rules:
+  - when: { category: any, min_severity: high }
+    tier: block
+  - when: { category: bias, min_severity: medium }
+    tier: block
+    note: decision-support cannot ship biased recommendations
+  - when: { detector_failed: true }
+    tier: review
+  - when: { category: pii, only: true, min_severity: medium }
+    tier: edit
+  - when: { category: groundedness, min_severity: low }
+    tier: review
+  - when: { confidence_below: 0.7 }
+    tier: review
+  - when: { category: any, min_severity: medium }
+    tier: review
+  - when: { always: true }
+    tier: allow
+
+retention_days: 2555   # ~7 years for regulated workflows
+
+action_policy:
+  enabled: true
+  actions:
+    default:
+      min_confidence: 0.99
+      max_text_tier: allow
+      block_if_ledger_escalated: true

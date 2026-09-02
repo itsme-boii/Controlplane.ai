@@ -1,0 +1,33 @@
+# EU overlay — GDPR + EU AI Act. Stricter across the board; applied last so it wins.
+meta:
+  name: eu
+  kind: jurisdiction
+  description: EU stricter overlay — GDPR data minimisation, EU AI Act oversight.
+  effective_from: 2026-01-01
+
+# Lower confidence floor tolerance -> abstain to human review more readily.
+confidence_floor: 0.65
+
+checks:
+  pii:
+    thresholds: { score: 0.3 }        # GDPR: detect more aggressively
+  toxicity:
+    thresholds: { toxicity: 0.35, identity_attack: 0.25, insult: 0.45 }
+  judge:
+    blocking: true                    # AI Act: human oversight, judge cannot be post-hoc
+
+pii:
+  action: review                      # conflicts with base `edit` — EU wins: hold for a human
+  entities:
+    - PERSON
+    - EMAIL_ADDRESS
+    - PHONE_NUMBER
+    - CREDIT_CARD
+    - IBAN_CODE
+    - IP_ADDRESS
+    - LOCATION
+    - NRP                             # nationality / religious / political group
+    - MEDICAL_LICENSE
+
+# GDPR storage limitation: shorter default retention.
+retention_days: 180

@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-neutral-950 text-neutral-200 antialiased;
+}
+
+.glass {
+  @apply bg-neutral-900/40 backdrop-blur-xl border border-neutral-800/50 shadow-2xl;
+}
+
+.badge {
+  @apply px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider shadow-sm;
+}
+.badge-allow {
+  @apply bg-allow/10 text-allow border border-allow/30;
+}
+.badge-edit {
+  @apply bg-edit/10 text-edit border border-edit/30;
+}
+.badge-review {
+  @apply bg-review/10 text-review border border-review/30;
+}
+.badge-block {
+  @apply bg-block/10 text-block border border-block/30;
+}

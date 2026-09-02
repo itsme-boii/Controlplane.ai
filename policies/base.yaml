@@ -1,0 +1,82 @@
+# Default policy. Every use case starts here and overrides only what differs.
+meta:
+  name: base
+  kind: base
+  description: ControlPlane.ai default policy — medium risk tolerance, deep path.
+  effective_from: 2026-01-01
+
+latency_path: deep
+latency_budget_ms: 1500
+confidence_floor: 0.5          # below this the engine abstains -> review
+
+checks:
+  pii:
+    enabled: true
+    blocking: true
+    thresholds: { score: 0.5 }
+  toxicity:
+    enabled: true
+    blocking: true
+    thresholds: { toxicity: 0.5, identity_attack: 0.4, insult: 0.6 }
+  groundedness:
+    enabled: true
+    blocking: true
+    thresholds: { entailment: 0.5 }
+  injection:
+    enabled: true
+    blocking: true
+    thresholds: { similarity: 0.75 }
+  judge:
+    enabled: true
+    blocking: true
+    thresholds: { violation: 0.5 }
+
+pii:
+  action: edit
+  mask_char: "•"
+  entities:
+    - PERSON
+    - EMAIL_ADDRESS
+    - PHONE_NUMBER
+    - CREDIT_CARD
+    - US_SSN
+    - IBAN_CODE
+    - IP_ADDRESS
+    - LOCATION
+
+# Ordered decision table (evaluated top-down, first match wins). Phase 4 executes it.
+# `only: true` means the named category is the sole finding present.
+decision_rules:
+  - when: { category: pii, only: true, min_severity: medium }
+    tier: edit
+    note: PII is the only finding — mask the spans and ship the rest
+  - when: { category: any, min_severity: high }
+    tier: block
+    note: any other high-severity finding blocks
+  - when: { detector_failed: true }
+    tier: review
+    note: missing evidence never allows (no-false-fallback)
+  - when: { category: groundedness, min_severity: medium }
+    tier: review
+    note: ungrounded or contradicted claims go to a human
+  - when: { confidence_below: 0.5 }
+    tier: review
+    note: low confidence abstains to review
+  - when: { category: any, min_severity: medium }
+    tier: review
+  - when: { always: true }
+    tier: allow
+
+retention_days: 365
+
+action_policy:
+  enabled: true
+  actions:
+    send_email:
+      min_confidence: 0.8
+      max_text_tier: allow
+      block_if_ledger_escalated: true
+    default:
+      min_confidence: 0.9
+      max_text_tier: allow
+      block_if_ledger_escalated: true

@@ -1,0 +1,36 @@
+# --- Secrets / local config ---
+.env
+.env.local
+*.local
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Node / Next.js ---
+node_modules/
+web/.next/
+web/out/
+web/build/
+*.tsbuildinfo
+.pnpm-store/
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+
+# --- Data / runtime ---
+*.log
+pgdata/
+docker-volumes/
+
+docs/

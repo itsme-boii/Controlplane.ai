@@ -1,0 +1,20 @@
+# Internal employee assistant over a company wiki. Medium tolerance, RAG-grounded.
+meta:
+  name: knowledgecopilot
+  kind: usecase
+  description: Internal wiki copilot — medium path, groundedness matters most.
+  effective_from: 2026-01-01
+
+latency_path: deep
+latency_budget_ms: 1500
+
+checks:
+  groundedness:
+    enabled: true
+    blocking: true
+    thresholds: { entailment: 0.6 }   # stricter — this use case is RAG-grounded
+  injection:
+    thresholds: { similarity: 0.78 }
+
+confidence_floor: 0.55
+retention_days: 365

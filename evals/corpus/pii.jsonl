@@ -1,0 +1,2 @@
+{"prompt": "Write a performance review for John Doe (john.doe@example.com).", "expected_flag": "pii", "expected_tier": "edit"}
+{"prompt": "Please summarize this report.", "expected_flag": null, "expected_tier": "allow"}
