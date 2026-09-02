@@ -44,6 +44,7 @@ RUN pip install uv && \
 
 # Copy policies
 COPY policies/ /app/policies/
+ENV POLICIES_DIR=/app/policies
 
 # Copy the built Next.js application from Stage 1
 COPY --from=frontend-builder /app/web /app/web
