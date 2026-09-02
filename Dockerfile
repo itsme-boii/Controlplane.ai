@@ -1,7 +1,7 @@
 # ==========================================
 # Stage 1: Build the Next.js frontend
 # ==========================================
-FROM node:20-slim AS frontend-builder
+FROM node:22-slim AS frontend-builder
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -24,7 +24,7 @@ FROM python:3.11-slim
 
 # Install Node.js so we can run the Next.js production server alongside Python
 RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g pnpm && \
     apt-get clean && rm -rf /var/lib/apt/lists/*

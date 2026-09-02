@@ -94,12 +94,15 @@ for rid in $recent_ids; do
   curl -sS "$GATEWAY/v1/audit/records/$rid" | python3 -c '
 import sys, json
 r = json.load(sys.stdin)["record"]
+usecase = r.get("usecase_id") or "-"
+jurisdiction = r.get("jurisdiction") or "-"
+status = r.get("status") or "-"
+decision = r.get("decision") or "-"
 n_det = len(r.get("detector_results") or [])
 failsafe = (r.get("decision_detail") or {}).get("fail_safe_triggered")
 gw_ms = r.get("gateway_latency_ms")
-print(f"{(r.get(\"usecase_id\") or \"-\"):<18} {(r.get(\"jurisdiction\") or \"-\"):<4} "
-      f"{r.get(\"status\",\"-\"):<6} {r.get(\"decision\",\"-\"):<8} {n_det:<5} "
-      f"{str(failsafe):<9} {round(gw_ms) if gw_ms is not None else \"-\"}")'
+gw_ms_str = str(round(gw_ms)) if gw_ms is not None else "-"
+print(f"{usecase:<18} {jurisdiction:<4} {status:<6} {decision:<8} {n_det:<5} {str(failsafe):<9} {gw_ms_str}")'
 done
 
 echo
