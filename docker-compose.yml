@@ -13,7 +13,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U controlplane"]
+      test: [ "CMD-SHELL", "pg_isready -U controlplane" ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -23,7 +23,7 @@ services:
     ports:
       - "6380:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -38,9 +38,13 @@ services:
     env_file:
       - .env
     environment:
-      # Container-network overrides (win over .env, which targets host runs).
-      DATABASE_URL: postgresql+asyncpg://controlplane:controlplane@postgres:5432/controlplane
-      REDIS_URL: redis://redis:6379/0
+      # DATABASE_URL/REDIS_URL come from .env (git-ignored) via docker
+      # compose's own ${VAR} substitution, not hardcoded here — this file is
+      # git-tracked, .env is not. Currently point at external cloud Postgres/
+      # Redis (Render + Redis Cloud), not the local postgres/redis services
+      # below — intentional; see .env for the actual values.
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
       POLICIES_DIR: /app/policies
     volumes:
       # Live-edit policy packs without a rebuild (Phase 8 adds a UI editor).

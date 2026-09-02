@@ -8,6 +8,14 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_GATEWAY_URL: process.env.NEXT_PUBLIC_GATEWAY_URL ?? "http://localhost:8080",
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: 'http://127.0.0.1:8000/v1/:path*',
+      },
+    ]
+  },
 };
 
 export default nextConfig;
